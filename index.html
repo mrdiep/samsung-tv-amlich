@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="initial-scale=1">
+    <title>Âm lịch Việt Nam</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
+    <script src="js/vue.js"></script>
+    <script src="js/moment.min.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/amlich-hnd.js"></script>
+</head>
+
+<body>
+
+    <div id="app">
+        <div style="width: 40%; float:left">
+            <div style="margin-top:60px">
+                <h2>Tháng {{dateTime.getMonth() + 1}} - Năm {{dateTime.getFullYear()}}</h2>
+            </div>
+            <div style="font-size: 130px;">
+                <h2>{{dateTime.getDate()}}</h2>
+            </div>
+            <h3 style="font-size: 80px;">{{time}}</h2>
+                <h3 style="font-size: 80px;">{{dayOfWeek}}</h2>
+                    <div>
+                        <div style="width: 50%; float:left">
+                            <h3>Tháng {{lunarDate.month}} </h3>
+                            <h3 style="font-size: 100px;">{{lunarDate.day}}</h3>
+                        </div>
+                        <div style="width: 50%; float:left">
+                            <h4>Ngày {{lunarDateName[0]}}</h4>
+                            <h4>Tháng {{lunarDateName[1]}}</h4>
+                            <h4>Năm {{lunarDateName[2]}}</h4>
+                        </div>
+                    </div>
+        </div>
+
+        <div style="width: 60%; float:right;">
+            <div v-for="c in calendars">
+                <div>
+                    <h3>{{c.monthName}}</h3>
+                </div>
+                <ul class="weekdays">
+                    <li>Chủ Nhật</li>
+                    <li>Thứ Hai</li>
+                    <li>Thứ Ba</li>
+                    <li>Thứ Tư</li>
+                    <li>Thứ Năm</li>
+                    <li>Thứ Sáu</li>
+                    <li>Thứ Bảy</li>
+                </ul>
+
+                <ul class="days">
+                    <li v-for="d in c.list"
+                        v-bind:class="{ active: d.isActive, holiday: d.holiday.show, event: d.event.show }">
+                        <p class='a-day'>{{d.a}}</p>
+                        <p class='b-day'>{{d.b}}</p>
+                        <p v-if='d.holiday.show'>{{d.holiday.desc}}</p>
+                        <p v-if='d.event.show'>{{d.event.desc}}</p>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+
+    </div>
+</body>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            lunarDate: {},
+            time: null,
+            lunarDateName: [null, null, null],
+            dateTime: new Date(),
+            dayOfWeek: '',
+            calendars: [
+            ]
+        },
+        mounted() {
+            var dateTime = new Date();
+            this.dayOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'][new Date().getDay()];
+            this.lunarDate = getLunarDate(dateTime.getDate(), dateTime.getMonth() + 1, dateTime.getFullYear());
+            this.yearName = getCanChi(this.lunarDate)[2];
+            this.lunarDateName = getCanChi(this.lunarDate);
+
+            var startDate = moment(new Date());
+            startDate.add(-0, 'months');
+            startDate = moment(new Date(startDate.get('year'), startDate.get('month'), 1));
+
+            function isHolliday(duongLich, amLich) {
+                var duongLichHoliday = ['1/1', '30/4', '1/5', '2/9', '1/6', '8/3', '20/10'];
+                var duongLichHolidayDesc = ['Năm mới', 'GP Miền Nam', 'Lễ Lao Động', 'Quốc Khánh', 'Tết Thiếu Nhi', 'P.Nữ VN', 'Q.Tế Phụ Nữ'];
+                var amLichHoliday = ['1/1', '10/3', '15/8', '23/12']
+                var amLichHolidayDesc = ['', 'Giỗ Tổ H.V', 'Trung Thu', 'Ngày Táo Công']
+
+                var dlIndex = duongLichHoliday.indexOf(duongLich);
+                var alindex = amLichHoliday.indexOf(amLich) ;
+
+                if (dlIndex != -1 || alindex != -1) {
+                    return {
+                        show: true,
+                        desc: (dlIndex == -1 ? '' : duongLichHolidayDesc[duongLichHoliday.indexOf(duongLich)]) 
+                        + "\r\n"
+                        + (alindex == -1 ? '' : amLichHolidayDesc[amLichHoliday.indexOf(amLich)])
+                    };
+                }
+               
+                return {
+                    show: false
+                };
+            }
+
+            function isEvent(duongLich, amLich) {
+                var duongLichEvent = ['15/1', '10/7', '20/11']
+                var duongLichEventDesc = ['S.Nhật Mẹ', 'S.Nhật Quân', 'S.Nhật Bố']
+                var amLichEvent = []
+                var amLichEventDesc = [];
+
+                var dlIndex = duongLichEvent.indexOf(duongLich);
+                var alindex = amLichEvent.indexOf(amLich) ;
+
+                if (dlIndex != -1 || alindex != -1) {
+                    return {
+                        show: true,
+                        desc:
+                        (dlIndex == -1 ? '' : duongLichEventDesc[duongLichEvent.indexOf(duongLich)]) + '\r\n' + 
+                        (alindex == -1 ? '' : amLichEventDesc[amLichEvent.indexOf(amLich)])
+                    };
+                }
+
+                return {
+                    show: false
+                };
+            }
+
+            for (var i = 1; i <= 12; i++) {
+                var item = { monthName: 'Tháng ' + (startDate.get('month') + 1) + ((i == 1 || startDate.get('month') == 0) ? ', năm ' + startDate.get('year') : ''), list: [] };
+                this.calendars.push(item);
+
+                var time = moment(startDate);
+                for (var k = 0; k < time.toDate().getDay(); k++) {
+                    item.list.push({
+                        a: null,
+                        b: null,
+                        isActive: false,
+                        holiday: {show: false},
+                        event: {show: false},
+                    });
+                }
+
+                console.log(time.get('date') + "/" + time.get('month') + "->>   " + (i - 1) + '===>' + time.toDate().getDay())
+                while (time.get('month') == startDate.get('month')) {
+
+                    var lunarX = getLunarDate(time.get('date'), time.get('month') + 1, time.get('year'));
+                    item.list.push({
+                        a: time.get('date'),
+                        b: ((lunarX.day === 1 && lunarX.month === 1) ? ('Tết ' + getCanChi(lunarX)[2]) : (lunarX.day + (lunarX.day === 1 ? ('/' + lunarX.month) : ''))),
+                        isActive: (time.get('date') == dateTime.getDate() && time.get('month') === dateTime.getMonth() && time.get('year') == dateTime.getFullYear()),
+                        holiday: isHolliday(time.get('date') + '/' + (time.get('month') + 1), lunarX.day + '/' + lunarX.month),
+                        event: isEvent(time.get('date') + '/' + (time.get('month') + 1), lunarX.day + '/' + lunarX.month),
+                    });
+
+                    time.add(1, 'days');
+                }
+
+                startDate.add(1, 'months');
+
+            }
+
+            const self = this;
+            setInterval(function () {
+                self.time = getCurrentTime();
+            }, 1000);
+        },
+        methods: {
+
+        }
+    });
+</script>
+
+</html>
